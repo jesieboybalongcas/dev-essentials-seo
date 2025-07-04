@@ -121,7 +121,7 @@ function dev_essential_meta_updater() { ?>
 						<td><textarea name="meta_description" id="meta_description" class="large-text" rows="3" required></textarea></td>
 					</tr>
 				</table>
-				<?php submit_button( 'Update Meta Data', 'primary', 'meta_updater_submit' ); ?>
+				<?php submit_button( 'Update Meta Data - Test Update', 'primary', 'meta_updater_submit' ); ?>
 			</form>
 		</div>
 
