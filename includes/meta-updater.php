@@ -128,7 +128,7 @@ function dev_essential_meta_updater() { ?>
 		<hr>
 		<div class="dev-section">
 			<h2>📥 Bulk CSV Upload</h2>
-			<p><strong>CSV Format:</strong> Site URL, Meta Title, Meta Description | 
+			<p><strong>CSV Format:</strong> Site URL, Meta Title, Meta Description  |  
 			   <a href="<?php echo plugin_dir_url( __FILE__ ) . '../meta-bulk-update-template.csv'; ?>">
 				   Download CSV Template Here
 			   </a>

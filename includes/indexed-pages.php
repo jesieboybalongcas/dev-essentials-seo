@@ -167,7 +167,7 @@ function dev_essential_indexed_pages() {
 
     <div class="dev-section">
         <h2>📥 Bulk CSV Upload</h2>
-        <p><strong>Format:</strong> <code>Site URL, Action</code> (Action = <code>index</code> or <code>noindex</code>) | <a href="<?php echo plugin_dir_url( __FILE__ ) . '../index-pages-template.csv'; ?>">Download CSV Template Here</a></p>
+        <p><strong>Format:</strong> <code>Site URL, Action</code> (Action = <code>index</code> or <code>noindex</code>)  |  <a href="<?php echo plugin_dir_url( __FILE__ ) . '../index-pages-template.csv'; ?>">Download CSV Template Here</a></p>
         <form method="post" enctype="multipart/form-data" style="margin-top:10px;max-width:400px;">
             <input type="file" name="csv_file" accept=".csv" required>
             <?php wp_nonce_field( 'dev_csv_upload_nonce', 'dev_csv_upload_nonce_field' ); ?>
