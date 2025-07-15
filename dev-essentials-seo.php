@@ -2,7 +2,7 @@
 /*
 Plugin Name: Dev Essentials for SEO Implementation
 Description: Developer tools for SEO meta data, internal linking and per-page header/footer scripts.
-Version: 1.4
+Version: 1.5
 Author: Rocket Devs
 GitHub Plugin URI: https://github.com/jesieboybalongcas/dev-essentials-seo
 Primary Branch: main
