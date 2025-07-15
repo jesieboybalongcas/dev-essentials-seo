@@ -78,18 +78,18 @@ function dev_essential_indexed_pages() {
                         <th>Action</th>
                     </tr>
                     <tr>
-                        <td><?php echo esc_html(get_the_title($post_id)); ?></td>
-                        <td><?php echo esc_html($current_state); ?></td>
-                        <td>
+                        <td style="text-align: center;"><?php echo esc_html(get_the_title($post_id)); ?></td>
+                        <td style="text-align: center;"><?php echo esc_html($current_state); ?></td>
+                        <td style="text-align: center;">
                             <form method="post" style="margin:0;">
                                 <?php wp_nonce_field('dev_toggle_index_nonce'); ?>
                                 <input type="hidden" name="post_id" value="<?php echo esc_attr($post_id); ?>">
                                 <input type="hidden" name="index_action" value="<?php echo $current_state === 'No-index' ? 'index' : 'noindex'; ?>">
                                 <?php
                                 if ($current_state === 'No-index') {
-                                    submit_button('Set to Index', 'secondary small', 'dev_toggle_index', false);
+                                    submit_button('Set to Index', 'primary small', 'dev_toggle_index', false);
                                 } else {
-                                    submit_button('Set to No-index', 'secondary small', 'dev_toggle_index', false);
+                                    submit_button('Set to No-index', 'primary small', 'dev_toggle_index', false);
                                 }
                                 ?>
                             </form>
@@ -104,7 +104,7 @@ function dev_essential_indexed_pages() {
             <p><strong>Format:</strong> <code>Site URL, Action</code> (Action = <code>index</code> or <code>noindex</code>)  |  <a href="<?php echo plugin_dir_url( __FILE__ ) . '../index-pages-template.csv'; ?>">Download CSV Template Here</a></p>
             <form method="post" enctype="multipart/form-data" style="margin-top:10px;max-width:400px;">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload CSV', 'secondary', 'dev_csv_upload'); ?>
+                <?php submit_button('Upload and Bulk Update', 'primary', 'dev_csv_upload'); ?>
             </form>
         </div>
     </div>
