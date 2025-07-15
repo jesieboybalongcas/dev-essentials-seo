@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Dev Essentials for SEO Implementation
-Description: Developer tools for SEO meta data, internal linking and per-page header/footer scripts.
-Version: 1.5
+Description: Manage SEO meta, header/footer scripts, internal linking, and index status (supports Yoast, AIOSEO, Rank Math, SEOPress, and Squirrly SEO).
+Version: 1.6
 Author: Rocket Devs
 GitHub Plugin URI: https://github.com/jesieboybalongcas/dev-essentials-seo
-Primary Branch: main
+Primary Branch: master
 */
 
 if ( ! defined( 'ABSPATH' ) ) {
