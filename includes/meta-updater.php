@@ -64,7 +64,7 @@ function dev_essential_meta_updater() {
         </style>
 
         <div class="dev-section">
-            <h2>Single Meta Update</h2>
+            <h2>🔎 Single Meta Update</h2>
             <form method="post">
                 <table class="form-table">
                     <tr><th>Page URL</th><td><input type="url" name="page_url" class="regular-text" required></td></tr>
@@ -76,8 +76,12 @@ function dev_essential_meta_updater() {
         </div>
 
         <div class="dev-section">
-            <h2>Bulk CSV Upload</h2>
-            <p><a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../meta-bulk-update-template.csv'; ?>">Download Template</a></p>
+            <h2>📥 Bulk CSV Upload</h2>
+            <p><strong>CSV Format:</strong> Site URL, Meta Title, Meta Description  |  
+			   <a href="<?php echo plugin_dir_url( __FILE__ ) . '../meta-bulk-update-template.csv'; ?>">
+				   Download CSV Template Here
+			   </a>
+			</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="file" name="csv_file" accept=".csv" required>
                 <?php submit_button('Upload and Bulk Update', 'secondary', 'meta_csv_upload'); ?>

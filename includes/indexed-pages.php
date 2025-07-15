@@ -60,7 +60,7 @@ function dev_essential_indexed_pages() {
         <?php echo $status_msg; ?>
 
         <div class="dev-section">
-            <h2>Search Page Index Status</h2>
+            <h2>🔎 Search Page Index Status</h2>
             <form method="post" style="display:flex;gap:10px;align-items:center;max-width:600px;">
                 <label for="site_url" style="margin:0;font-weight:600;">Site URL:</label>
                 <input type="url" name="site_url" id="site_url" value="<?php echo esc_attr($url); ?>" class="regular-text" style="flex:1" required>
@@ -70,7 +70,7 @@ function dev_essential_indexed_pages() {
 
         <?php if ($post_id): ?>
             <div class="dev-section">
-                <h2>Search Result</h2>
+                <h2>📄 Search Result</h2>
                 <table>
                     <tr>
                         <th>Title</th>
@@ -100,9 +100,8 @@ function dev_essential_indexed_pages() {
         <?php endif; ?>
 
         <div class="dev-section">
-            <h2>Bulk CSV Upload</h2>
-            <p><strong>Format:</strong> Site URL, Action (<code>index</code> or <code>noindex</code>)</p>
-            <p><a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../index-bulk-template.csv'; ?>">Download Template</a></p>
+            <h2>📥 Bulk CSV Upload</h2>
+            <p><strong>Format:</strong> <code>Site URL, Action</code> (Action = <code>index</code> or <code>noindex</code>)  |  <a href="<?php echo plugin_dir_url( __FILE__ ) . '../index-pages-template.csv'; ?>">Download CSV Template Here</a></p>
             <form method="post" enctype="multipart/form-data" style="margin-top:10px;max-width:400px;">
                 <input type="file" name="csv_file" accept=".csv" required>
                 <?php submit_button('Upload CSV', 'secondary', 'dev_csv_upload'); ?>
