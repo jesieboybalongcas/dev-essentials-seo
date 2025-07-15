@@ -2,8 +2,8 @@
 function dev_essential_meta_updater() {
     if (isset($_POST['meta_updater_submit'])) {
         $url = esc_url_raw($_POST['page_url']);
-        $meta_title = sanitize_text_field($_POST['meta_title']);
-        $meta_desc = sanitize_textarea_field($_POST['meta_description']);
+        $meta_title = trim($_POST['meta_title']);
+        $meta_desc = trim($_POST['meta_description']);
         $post_id = url_to_postid($url);
 
         if ($post_id) {
@@ -21,10 +21,10 @@ function dev_essential_meta_updater() {
             fgetcsv($handle); // skip header
             while (($data = fgetcsv($handle)) !== false) {
                 $rows++;
-                $url = esc_url_raw(trim($data[0] ?? ''));
-                $title = sanitize_text_field(trim($data[1] ?? ''));
-                $desc = sanitize_textarea_field(trim($data[2] ?? ''));
-                if ($url && $title) {
+                $url   = esc_url_raw(trim($data[0] ?? ''));
+                $title = trim($data[1] ?? '');
+                $desc  = trim($data[2] ?? '');
+                if ($url) {
                     $post_id = url_to_postid($url);
                     if ($post_id) {
                         dev_essential_update_meta_fields($post_id, $title, $desc);
@@ -33,7 +33,7 @@ function dev_essential_meta_updater() {
                 }
             }
             fclose($handle);
-            echo "<div class='notice notice-success'><p>CSV processed: $success of $rows updated.</p></div>";
+            echo "<div class='notice notice-success'><p>CSV processed: $success of $rows rows updated.</p></div>";
         }
     }
     ?>
@@ -57,48 +57,51 @@ function dev_essential_meta_updater() {
                 margin-bottom: 15px;
                 color: #2271b1;
             }
-            .dev-section .dev-divider {
-                border-top: 1px dashed #ccc;
-                margin: 30px 0;
-            }
         </style>
 
         <div class="dev-section">
-            <h2>🔎 Single Meta Update</h2>
+			<h2>🔎 Single Meta Update</h2>
             <form method="post">
                 <table class="form-table">
                     <tr><th>Page URL</th><td><input type="url" name="page_url" class="regular-text" required></td></tr>
-                    <tr><th>Meta Title</th><td><input type="text" name="meta_title" class="regular-text" required></td></tr>
-                    <tr><th>Meta Description</th><td><textarea name="meta_description" class="large-text" rows="3"></textarea></td></tr>
+                    <tr><th>Meta Title</th><td><input type="text" name="meta_title" class="regular-text" placeholder="Leave empty to keep current"></td></tr>
+                    <tr><th>Meta Description</th><td><textarea name="meta_description" class="large-text" rows="3" placeholder="Leave empty to keep current"></textarea></td></tr>
                 </table>
                 <?php submit_button('Update Meta Data', 'primary', 'meta_updater_submit'); ?>
             </form>
         </div>
 
         <div class="dev-section">
-            <h2>📥 Bulk CSV Upload</h2>
-            <p><strong>CSV Format:</strong> Site URL, Meta Title, Meta Description  |  
-			   <a href="<?php echo plugin_dir_url( __FILE__ ) . '../meta-bulk-update-template.csv'; ?>">
-				   Download CSV Template Here
-			   </a>
+			<h2>📥 Bulk CSV Upload</h2>
+			<p><strong>CSV Format:</strong> Site URL, Meta Title, Meta Description  |  
+			<a href="<?php echo plugin_dir_url( __FILE__ ) . '../meta-bulk-update-template.csv'; ?>">
+				Download CSV Template Here
+			</a>
 			</p>
+            <p><i><strong>Note:</strong> Leave Title or Description blank to keep existing values unchanged.</i></p>
             <form method="post" enctype="multipart/form-data">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload and Bulk Update', 'primary', 'meta_csv_upload'); ?>
+                <?php submit_button('Upload and Bulk Update', 'secondary', 'meta_csv_upload'); ?>
             </form>
         </div>
     </div>
 <?php }
 
 function dev_essential_update_meta_fields($post_id, $meta_title, $meta_desc) {
-    update_post_meta($post_id, '_yoast_wpseo_title', $meta_title);
-    update_post_meta($post_id, '_yoast_wpseo_metadesc', $meta_desc);
-    update_post_meta($post_id, '_aioseo_title', $meta_title);
-    update_post_meta($post_id, '_aioseo_description', $meta_desc);
-    update_post_meta($post_id, 'rank_math_title', $meta_title);
-    update_post_meta($post_id, 'rank_math_description', $meta_desc);
-    update_post_meta($post_id, '_seopress_titles_title', $meta_title);
-    update_post_meta($post_id, '_seopress_titles_desc', $meta_desc);
-    update_post_meta($post_id, '_sq_title', $meta_title);
-    update_post_meta($post_id, '_sq_description', $meta_desc);
+    // Only update if provided
+    if (!empty($meta_title)) {
+        update_post_meta($post_id, '_yoast_wpseo_title', $meta_title);
+        update_post_meta($post_id, '_aioseo_title', $meta_title);
+        update_post_meta($post_id, 'rank_math_title', $meta_title);
+        update_post_meta($post_id, '_seopress_titles_title', $meta_title);
+        update_post_meta($post_id, '_sq_title', $meta_title);
+    }
+
+    if (!empty($meta_desc)) {
+        update_post_meta($post_id, '_yoast_wpseo_metadesc', $meta_desc);
+        update_post_meta($post_id, '_aioseo_description', $meta_desc);
+        update_post_meta($post_id, 'rank_math_description', $meta_desc);
+        update_post_meta($post_id, '_seopress_titles_desc', $meta_desc);
+        update_post_meta($post_id, '_sq_description', $meta_desc);
+    }
 }
