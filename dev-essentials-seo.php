@@ -2,7 +2,7 @@
 /*
 Plugin Name: Dev Essentials for SEO Implementation
 Description: Manage SEO meta, header/footer scripts, internal linking, and index status (supports Yoast, AIOSEO, Rank Math, SEOPress, and Squirrly SEO).
-Version: 1.9
+Version: 2.0
 Author: Rocket Devs
 GitHub Plugin URI: https://github.com/jesieboybalongcas/dev-essentials-seo
 Primary Branch: master

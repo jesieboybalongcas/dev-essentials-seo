@@ -1,34 +1,41 @@
 <?php
-/**
- * Internal Linking Updater – inject internal links into content.
- * Consistent styling with other Dev Essential features.
- */
-
 function dev_essential_internal_links() {
-    // Save or update linking keywords
-    if ( isset( $_POST['dev_save_internal_links'] ) && check_admin_referer( 'dev_internal_links_action', 'dev_internal_links_nonce' ) ) {
-        $links_data = array_map( 'sanitize_text_field', $_POST['internal_links'] ?? [] );
-        update_option( 'dev_internal_links_data', $links_data );
-        echo '<div class="notice notice-success"><p>Internal links updated successfully.</p></div>';
+    // Save internal linking data
+    if (isset($_POST['dev_save_internal_links']) && check_admin_referer('dev_internal_links_action', 'dev_internal_links_nonce')) {
+        $links_data = [];
+        if (!empty($_POST['keywords']) && !empty($_POST['urls'])) {
+            foreach ($_POST['keywords'] as $i => $keyword) {
+                $keyword = sanitize_text_field($keyword);
+                $url = esc_url_raw($_POST['urls'][$i] ?? '');
+                if (!empty($keyword) && !empty($url)) {
+                    $links_data[$keyword] = $url;
+                }
+            }
+        }
+        update_option('dev_internal_links_data', $links_data);
+        echo '<div class="notice notice-success"><p>Internal linking data updated successfully.</p></div>';
     }
 
-    // Load current data
-    $saved_links = get_option( 'dev_internal_links_data', [] );
+    $saved_links = get_option('dev_internal_links_data', []);
     ?>
     <div class="wrap">
         <h1>Internal Linking Updater</h1>
-
         <style>
-            .dev-card {
+            .dev-section {
                 background: #fff;
                 border: 1px solid #ccd0d4;
-                border-radius: 6px;
+                border-left: 4px solid #2271b1;
                 padding: 20px;
-                margin-top: 20px;
+                margin-bottom: 30px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
-            .dev-card h2 {
+            .dev-section h2 {
                 margin-top: 0;
-                font-size: 18px;
+                font-size: 20px;
+                font-weight: 600;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 6px;
+                margin-bottom: 15px;
                 color: #2271b1;
             }
             .dev-link-row {
@@ -39,44 +46,34 @@ function dev_essential_internal_links() {
             .dev-link-row input {
                 flex: 1;
             }
-            .dev-description {
-                font-size: 12px;
-                color: #666;
-                margin-top: 5px;
-            }
             .dev-add-row {
                 margin-top: 10px;
             }
         </style>
 
-        <div class="dev-card">
-            <h2>Link Keywords and Target URLs</h2>
-            <p class="description dev-description">Add keywords and the URLs they should link to. These links will be auto-inserted in post content.</p>
-
-            <form method="post" id="dev_internal_links_form">
-                <?php wp_nonce_field( 'dev_internal_links_action', 'dev_internal_links_nonce' ); ?>
-
+        <div class="dev-section">
+            <h2>Manage Internal Links</h2>
+            <form method="post">
+                <?php wp_nonce_field('dev_internal_links_action', 'dev_internal_links_nonce'); ?>
                 <div id="dev-link-rows">
-                    <?php if ( ! empty( $saved_links ) ) : ?>
-                        <?php foreach ( $saved_links as $keyword => $url ) : ?>
+                    <?php if (!empty($saved_links)): ?>
+                        <?php foreach ($saved_links as $keyword => $url): ?>
                             <div class="dev-link-row">
-                                <input type="text" name="internal_links[<?php echo esc_attr( $keyword ); ?>]" value="<?php echo esc_attr( $url ); ?>" placeholder="Target URL">
-                                <input type="text" disabled value="<?php echo esc_attr( $keyword ); ?>" placeholder="Keyword">
+                                <input type="text" name="keywords[]" value="<?php echo esc_attr($keyword); ?>" placeholder="Keyword">
+                                <input type="url" name="urls[]" value="<?php echo esc_url($url); ?>" placeholder="Target URL">
                             </div>
                         <?php endforeach; ?>
-                    <?php else : ?>
+                    <?php else: ?>
                         <div class="dev-link-row">
-                            <input type="text" name="internal_links[Example Keyword]" value="https://example.com" placeholder="Target URL">
-                            <input type="text" disabled value="Example Keyword" placeholder="Keyword">
+                            <input type="text" name="keywords[]" placeholder="Keyword">
+                            <input type="url" name="urls[]" placeholder="Target URL">
                         </div>
                     <?php endif; ?>
                 </div>
-
                 <p class="dev-add-row">
-                    <button type="button" class="button" id="dev-add-link">+ Add Keyword</button>
+                    <button type="button" class="button" id="dev-add-link">+ Add Row</button>
                 </p>
-
-                <?php submit_button( 'Save Internal Links', 'primary', 'dev_save_internal_links' ); ?>
+                <?php submit_button('Save Internal Links', 'primary', 'dev_save_internal_links'); ?>
             </form>
         </div>
     </div>
@@ -84,32 +81,30 @@ function dev_essential_internal_links() {
     <script>
         (function($){
             $('#dev-add-link').on('click', function(){
-                let newRow = `
-                    <div class="dev-link-row">
-                        <input type="text" name="internal_links[New Keyword]" value="" placeholder="Target URL">
-                        <input type="text" disabled value="New Keyword" placeholder="Keyword">
-                    </div>`;
-                $('#dev-link-rows').append(newRow);
+                $('#dev-link-rows').append(
+                    '<div class="dev-link-row">'+
+                    '<input type="text" name="keywords[]" placeholder="Keyword">'+
+                    '<input type="url" name="urls[]" placeholder="Target URL">'+
+                    '</div>'
+                );
             });
         })(jQuery);
     </script>
 <?php }
 
 /**
- * Filter content to auto-inject internal links.
+ * Filter post content to inject internal links
  */
-add_filter( 'the_content', function( $content ) {
-    if ( is_admin() ) return $content;
+add_filter('the_content', function ($content) {
+    if (is_admin()) return $content;
+    $links = get_option('dev_internal_links_data', []);
+    if (empty($links)) return $content;
 
-    $links = get_option( 'dev_internal_links_data', [] );
-    if ( empty( $links ) ) return $content;
-
-    foreach ( $links as $keyword => $url ) {
-        if ( ! $keyword || ! $url ) continue;
-        $pattern = '/(' . preg_quote( $keyword, '/' ) . ')/i';
-        $replacement = '<a href="' . esc_url( $url ) . '">$1</a>';
-        $content = preg_replace( $pattern, $replacement, $content, 1 ); // link first occurrence only
+    foreach ($links as $keyword => $url) {
+        if (!$keyword || !$url) continue;
+        $pattern = '/(' . preg_quote($keyword, '/') . ')(?!([^<]+)?>)/i';
+        $replacement = '<a href="' . esc_url($url) . '">$1</a>';
+        $content = preg_replace($pattern, $replacement, $content, 1); // first occurrence only
     }
-
     return $content;
 });
