@@ -81,7 +81,7 @@ function dev_essential_meta_updater() {
             <p><i><strong>Note:</strong> Leave Title or Description blank to keep existing values unchanged.</i></p>
             <form method="post" enctype="multipart/form-data">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload and Bulk Update', 'secondary', 'meta_csv_upload'); ?>
+                <?php submit_button('Upload and Bulk Update', 'primary', 'meta_csv_upload'); ?>
             </form>
         </div>
     </div>
