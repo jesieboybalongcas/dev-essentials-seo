@@ -1,27 +1,31 @@
 <?php
 function dev_essential_indexed_pages() {
-    $url = ''; 
-    $post_id = 0; 
+    $url = '';
+    $object_id = 0;
+    $object_type = '';
     $status_msg = '';
 
-    // Lookup page
+    // Lookup page/term
     if (isset($_POST['dev_lookup'])) {
         $url = esc_url_raw($_POST['site_url']);
-        $post_id = url_to_postid($url);
-        if (!$post_id) {
-            $status_msg = '<div class="notice notice-error"><p>No WordPress page found for that URL.</p></div>';
+        [$object_type, $object_id] = dev_essential_find_indexed_object_by_url($url);
+
+        if (!$object_id) {
+            $status_msg = '<div class="notice notice-error"><p>No matching post/product or taxonomy term found for that URL.</p></div>';
         }
     }
 
     // Toggle index / no-index
     if (isset($_POST['dev_toggle_index']) && check_admin_referer('dev_toggle_index_nonce')) {
-        $post_id = intval($_POST['post_id']);
+        $object_id = intval($_POST['object_id']);
+        $object_type = sanitize_text_field($_POST['object_type']);
         $action = sanitize_text_field($_POST['index_action']);
-        dev_essential_set_index_status($post_id, $action);
-        $status_msg = "<div class='notice notice-success'><p>Page set to <strong>$action</strong>.</p></div>";
+        dev_essential_set_index_status($object_type, $object_id, $action);
+        $status_msg = "<div class='notice notice-success'><p>Page/Term set to <strong>$action</strong>.</p></div>";
+        [$object_type, $object_id] = [$object_type, $object_id];
     }
 
-    $current_state = $post_id ? dev_essential_get_index_status($post_id) : '';
+    $current_state = $object_id ? dev_essential_get_index_status($object_type, $object_id) : '';
     ?>
     <div class="wrap">
         <h1>Indexed Pages</h1>
@@ -60,7 +64,7 @@ function dev_essential_indexed_pages() {
         <?php echo $status_msg; ?>
 
         <div class="dev-section">
-            <h2>🔎 Search Page Index Status</h2>
+            <h2>Search Page/Product/Term Index Status</h2>
             <form method="post" style="display:flex;gap:10px;align-items:center;max-width:600px;">
                 <label for="site_url" style="margin:0;font-weight:600;">Site URL:</label>
                 <input type="url" name="site_url" id="site_url" value="<?php echo esc_attr($url); ?>" class="regular-text" style="flex:1" required>
@@ -68,28 +72,31 @@ function dev_essential_indexed_pages() {
             </form>
         </div>
 
-        <?php if ($post_id): ?>
+        <?php if ($object_id): ?>
             <div class="dev-section">
-                <h2>📄 Search Result</h2>
+                <h2>Search Result</h2>
                 <table>
+                    <tr><th>Title / Term Name</th><th>Index Status</th><th>Action</th></tr>
                     <tr>
-                        <th>Title</th>
-                        <th>Index Status</th>
-                        <th>Action</th>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;"><?php echo esc_html(get_the_title($post_id)); ?></td>
-                        <td style="text-align: center;"><?php echo esc_html($current_state); ?></td>
-                        <td style="text-align: center;">
+                        <td>
+                            <?php 
+                                echo $object_type === 'post' 
+                                    ? esc_html(get_the_title($object_id)) 
+                                    : esc_html(get_term($object_id)->name);
+                            ?>
+                        </td>
+                        <td><?php echo esc_html($current_state); ?></td>
+                        <td>
                             <form method="post" style="margin:0;">
                                 <?php wp_nonce_field('dev_toggle_index_nonce'); ?>
-                                <input type="hidden" name="post_id" value="<?php echo esc_attr($post_id); ?>">
+                                <input type="hidden" name="object_id" value="<?php echo esc_attr($object_id); ?>">
+                                <input type="hidden" name="object_type" value="<?php echo esc_attr($object_type); ?>">
                                 <input type="hidden" name="index_action" value="<?php echo $current_state === 'No-index' ? 'index' : 'noindex'; ?>">
                                 <?php
                                 if ($current_state === 'No-index') {
-                                    submit_button('Set to Index', 'primary small', 'dev_toggle_index', false);
+                                    submit_button('Set to Index', 'secondary small', 'dev_toggle_index', false);
                                 } else {
-                                    submit_button('Set to No-index', 'primary small', 'dev_toggle_index', false);
+                                    submit_button('Set to No-index', 'secondary small', 'dev_toggle_index', false);
                                 }
                                 ?>
                             </form>
@@ -100,30 +107,83 @@ function dev_essential_indexed_pages() {
         <?php endif; ?>
 
         <div class="dev-section">
-            <h2>📥 Bulk CSV Upload</h2>
-            <p><strong>Format:</strong> <code>Site URL, Action</code> (Action = <code>index</code> or <code>noindex</code>)  |  <a href="<?php echo plugin_dir_url( __FILE__ ) . '../index-pages-template.csv'; ?>">Download CSV Template Here</a></p>
+            <h2>Bulk CSV Upload</h2>
+            <p><strong>Format:</strong> Site URL, Action (<code>index</code> or <code>noindex</code>)</p>
+            <p><a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../index-bulk-template.csv'; ?>">Download Template</a></p>
             <form method="post" enctype="multipart/form-data" style="margin-top:10px;max-width:400px;">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload and Bulk Update', 'primary', 'dev_csv_upload'); ?>
+                <?php submit_button('Upload CSV', 'secondary', 'dev_csv_upload'); ?>
             </form>
         </div>
     </div>
 <?php }
 
-function dev_essential_set_index_status($post_id, $action) {
-    $noindex = ($action === 'noindex');
-    update_post_meta($post_id, '_yoast_wpseo_meta-robots-noindex', $noindex ? '1' : '');
-    update_post_meta($post_id, '_aioseo_robots_noindex', $noindex ? '1' : '0');
-    update_post_meta($post_id, 'rank_math_robots', $noindex ? 'noindex' : 'index');
-    update_post_meta($post_id, '_seopress_robots_index', $noindex ? '0' : '1');
-    update_post_meta($post_id, '_sq_robots', $noindex ? 'noindex' : 'index');
+/**
+ * Detect post/product/CPT or taxonomy term from URL
+ */
+function dev_essential_find_indexed_object_by_url($url) {
+    $post_id = url_to_postid($url);
+    if ($post_id) {
+        return ['post', $post_id];
+    }
+
+    $parsed = wp_parse_url($url);
+    if (!empty($parsed['path'])) {
+        $segments = array_filter(explode('/', untrailingslashit($parsed['path'])));
+        $slug = sanitize_title(end($segments));
+        $taxonomies = get_taxonomies(['public' => true], 'names');
+        foreach ($taxonomies as $taxonomy) {
+            $term = get_term_by('slug', $slug, $taxonomy);
+            if ($term && !is_wp_error($term)) {
+                return ['term', $term->term_id];
+            }
+        }
+    }
+    return [null, 0];
 }
 
-function dev_essential_get_index_status($post_id) {
-    if (get_post_meta($post_id, '_yoast_wpseo_meta-robots-noindex', true) === '1') return 'No-index';
-    if (get_post_meta($post_id, '_aioseo_robots_noindex', true) === '1') return 'No-index';
-    if (get_post_meta($post_id, 'rank_math_robots', true) === 'noindex') return 'No-index';
-    if (get_post_meta($post_id, '_seopress_robots_index', true) === '0') return 'No-index';
-    if (get_post_meta($post_id, '_sq_robots', true) === 'noindex') return 'No-index';
+/**
+ * Set index/noindex for posts or terms across major SEO plugins
+ */
+function dev_essential_set_index_status($type, $object_id, $action) {
+    $noindex = ($action === 'noindex');
+
+    if ($type === 'post') {
+        update_post_meta($object_id, '_yoast_wpseo_meta-robots-noindex', $noindex ? '1' : '');
+        update_post_meta($object_id, '_aioseo_robots_noindex', $noindex ? '1' : '0');
+        update_post_meta($object_id, 'rank_math_robots', $noindex ? 'noindex' : 'index');
+        update_post_meta($object_id, '_seopress_robots_index', $noindex ? '0' : '1');
+        update_post_meta($object_id, '_sq_robots', $noindex ? 'noindex' : 'index');
+    }
+
+    if ($type === 'term') {
+        update_term_meta($object_id, 'wpseo_noindex', $noindex ? '1' : ''); // Yoast
+        update_term_meta($object_id, '_aioseo_robots_noindex', $noindex ? '1' : '0');
+        update_term_meta($object_id, 'rank_math_robots', $noindex ? 'noindex' : 'index');
+        update_term_meta($object_id, '_seopress_robots_index', $noindex ? '0' : '1');
+        update_term_meta($object_id, '_sq_robots', $noindex ? 'noindex' : 'index');
+    }
+}
+
+/**
+ * Get current index/noindex status
+ */
+function dev_essential_get_index_status($type, $object_id) {
+    if ($type === 'post') {
+        if (get_post_meta($object_id, '_yoast_wpseo_meta-robots-noindex', true) === '1') return 'No-index';
+        if (get_post_meta($object_id, '_aioseo_robots_noindex', true) === '1') return 'No-index';
+        if (get_post_meta($object_id, 'rank_math_robots', true) === 'noindex') return 'No-index';
+        if (get_post_meta($object_id, '_seopress_robots_index', true) === '0') return 'No-index';
+        if (get_post_meta($object_id, '_sq_robots', true) === 'noindex') return 'No-index';
+    }
+
+    if ($type === 'term') {
+        if (get_term_meta($object_id, 'wpseo_noindex', true) === '1') return 'No-index';
+        if (get_term_meta($object_id, '_aioseo_robots_noindex', true) === '1') return 'No-index';
+        if (get_term_meta($object_id, 'rank_math_robots', true) === 'noindex') return 'No-index';
+        if (get_term_meta($object_id, '_seopress_robots_index', true) === '0') return 'No-index';
+        if (get_term_meta($object_id, '_sq_robots', true) === 'noindex') return 'No-index';
+    }
+
     return 'Index';
 }

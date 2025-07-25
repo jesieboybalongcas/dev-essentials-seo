@@ -3,13 +3,14 @@ function dev_essential_canonical_url() {
     if (isset($_POST['canonical_submit'])) {
         $url = esc_url_raw($_POST['page_url']);
         $canonical = trim($_POST['canonical_url']);
-        $post_id = url_to_postid($url);
 
-        if ($post_id) {
-            dev_essential_update_canonical($post_id, $canonical);
+        [$object_type, $object_id] = dev_essential_find_indexed_object_by_url($url);
+
+        if ($object_id) {
+            dev_essential_update_canonical_url($object_type, $object_id, $canonical);
             echo '<div class="notice notice-success"><p>Canonical URL updated for: ' . esc_url($url) . '</p></div>';
         } else {
-            echo '<div class="notice notice-error"><p>Page not found: ' . esc_url($url) . '</p></div>';
+            echo '<div class="notice notice-error"><p>Object not found for: ' . esc_url($url) . '</p></div>';
         }
     }
 
@@ -17,15 +18,15 @@ function dev_essential_canonical_url() {
         $handle = fopen($_FILES['csv_file']['tmp_name'], 'r');
         $rows = 0; $success = 0;
         if ($handle !== false) {
-            fgetcsv($handle); // skip header
+            fgetcsv($handle); // Skip header
             while (($data = fgetcsv($handle)) !== false) {
                 $rows++;
                 $url = esc_url_raw(trim($data[0] ?? ''));
                 $canonical = trim($data[1] ?? '');
                 if ($url) {
-                    $post_id = url_to_postid($url);
-                    if ($post_id) {
-                        dev_essential_update_canonical($post_id, $canonical);
+                    [$object_type, $object_id] = dev_essential_find_indexed_object_by_url($url);
+                    if ($object_id) {
+                        dev_essential_update_canonical_url($object_type, $object_id, $canonical);
                         $success++;
                     }
                 }
@@ -58,36 +59,55 @@ function dev_essential_canonical_url() {
         </style>
 
         <div class="dev-section">
-            <h2>🔎 Single Canonical URL Update</h2>
+            <h2>Single Canonical URL Update</h2>
             <form method="post">
                 <table class="form-table">
-                    <tr><th>Page URL</th><td><input type="url" name="page_url" class="regular-text" required></td></tr>
-                    <tr><th>Canonical URL</th><td><input type="url" name="canonical_url" class="regular-text" placeholder="Leave empty to keep current"></td></tr>
+                    <tr>
+                        <th>Page / Post / Product / Taxonomy URL</th>
+                        <td><input type="url" name="page_url" class="regular-text" required></td>
+                    </tr>
+                    <tr>
+                        <th>Canonical URL</th>
+                        <td><input type="url" name="canonical_url" class="regular-text" placeholder="Leave empty to keep current"></td>
+                    </tr>
                 </table>
                 <?php submit_button('Update Canonical URL', 'primary', 'canonical_submit'); ?>
             </form>
         </div>
 
         <div class="dev-section">
-            <h2>📥 Bulk CSV Upload</h2>
-            <p><strong>CSV Format:</strong> Page URL, Canonical URL  |  
-			<a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../canonical-bulk-template.csv'; ?>">Download CSV Template Here</a>
-			</p>
-            <p><i><strong>Note:</strong> Leave Canonical URL blank to keep existing value unchanged.</i></p>
+            <h2>Bulk CSV Upload</h2>
+            <p><strong>Note:</strong> Works for all Post Types, CPTs, WooCommerce Products, and Taxonomies. Leave blank to keep existing value unchanged.</p>
+            <p><a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../canonical-bulk-template.csv'; ?>">Download Template</a></p>
             <form method="post" enctype="multipart/form-data">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload and Bulk Update', 'primary', 'canonical_csv_upload'); ?>
+                <?php submit_button('Upload and Bulk Update', 'secondary', 'canonical_csv_upload'); ?>
             </form>
         </div>
     </div>
 <?php }
 
-function dev_essential_update_canonical($post_id, $canonical) {
-    if (!empty($canonical)) {
-        update_post_meta($post_id, '_yoast_wpseo_canonical', esc_url_raw($canonical));
-        update_post_meta($post_id, '_aioseo_canonical_url', esc_url_raw($canonical));
-        update_post_meta($post_id, 'rank_math_canonical_url', esc_url_raw($canonical));
-        update_post_meta($post_id, '_seopress_robots_canonical', esc_url_raw($canonical));
-        update_post_meta($post_id, '_sq_canonical', esc_url_raw($canonical));
+/**
+ * Update Canonical URL for posts or terms.
+ */
+function dev_essential_update_canonical_url($type, $object_id, $canonical) {
+    if (empty($canonical)) {
+        return; // Skip if empty (no changes)
+    }
+
+    if ($type === 'post') {
+        update_post_meta($object_id, '_yoast_wpseo_canonical', esc_url_raw($canonical));
+        update_post_meta($object_id, '_aioseo_canonical_url', esc_url_raw($canonical));
+        update_post_meta($object_id, 'rank_math_canonical_url', esc_url_raw($canonical));
+        update_post_meta($object_id, '_seopress_robots_canonical', esc_url_raw($canonical));
+        update_post_meta($object_id, '_sq_canonical', esc_url_raw($canonical));
+    }
+
+    if ($type === 'term') {
+        update_term_meta($object_id, 'wpseo_canonical', esc_url_raw($canonical));
+        update_term_meta($object_id, '_aioseo_canonical_url', esc_url_raw($canonical));
+        update_term_meta($object_id, 'rank_math_canonical_url', esc_url_raw($canonical));
+        update_term_meta($object_id, '_seopress_robots_canonical', esc_url_raw($canonical));
+        update_term_meta($object_id, '_sq_canonical', esc_url_raw($canonical));
     }
 }
