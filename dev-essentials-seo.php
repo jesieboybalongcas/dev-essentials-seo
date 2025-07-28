@@ -2,7 +2,7 @@
 /*
 Plugin Name: Dev Essentials for SEO Implementation
 Description: Manage SEO meta, header/footer scripts, internal linking, and index status (supports Yoast, AIOSEO, Rank Math, SEOPress, and Squirrly SEO).
-Version: 2.5
+Version: 2.6
 Author: Rocket Devs
 GitHub Plugin URI: https://github.com/jesieboybalongcas/dev-essentials-seo
 Primary Branch: master
@@ -78,6 +78,46 @@ add_action( 'admin_menu', function () {
         'dev_essential_canonical_url'
     );
 } );
+
+// ✅ Shared helper function for all functionalities
+if (!function_exists('dev_essential_find_object_by_url')) {
+    function dev_essential_find_object_by_url($url) {
+        if (empty($url)) return [null, 0];
+
+        // ✅ Try post/page/product/CPT first
+        $post_id = url_to_postid($url);
+        if ($post_id) {
+            return ['post', $post_id];
+        }
+
+        // ✅ Taxonomies (WooCommerce prioritized first)
+        $parsed = wp_parse_url($url);
+        if (!empty($parsed['path'])) {
+            $segments = array_filter(explode('/', untrailingslashit($parsed['path'])));
+            $slug = sanitize_title(end($segments));
+
+            $priority_taxonomies = ['product_cat', 'product_tag'];
+            foreach ($priority_taxonomies as $taxonomy) {
+                $term = get_term_by('slug', $slug, $taxonomy);
+                if ($term && !is_wp_error($term)) {
+                    return ['term', $term->term_id];
+                }
+            }
+
+            // ✅ Fallback: Other public taxonomies
+            $taxonomies = get_taxonomies(['public' => true], 'names');
+            foreach ($taxonomies as $taxonomy) {
+                if (in_array($taxonomy, $priority_taxonomies)) continue;
+                $term = get_term_by('slug', $slug, $taxonomy);
+                if ($term && !is_wp_error($term)) {
+                    return ['term', $term->term_id];
+                }
+            }
+        }
+        return [null, 0];
+    }
+}
+
 
 /*--------------------------------------------------------------
 # Modular code
