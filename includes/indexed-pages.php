@@ -5,10 +5,10 @@ function dev_essential_indexed_pages() {
     $object_type = '';
     $status_msg = '';
 
-    // Lookup page/term
+    // Lookup page or taxonomy
     if (isset($_POST['dev_lookup'])) {
         $url = esc_url_raw($_POST['site_url']);
-        [$object_type, $object_id] = dev_essential_find_indexed_object_by_url($url);
+        [$object_type, $object_id] = dev_essential_find_object_by_url($url);
 
         if (!$object_id) {
             $status_msg = '<div class="notice notice-error"><p>No matching post/product or taxonomy term found for that URL.</p></div>';
@@ -22,7 +22,6 @@ function dev_essential_indexed_pages() {
         $action = sanitize_text_field($_POST['index_action']);
         dev_essential_set_index_status($object_type, $object_id, $action);
         $status_msg = "<div class='notice notice-success'><p>Page/Term set to <strong>$action</strong>.</p></div>";
-        [$object_type, $object_id] = [$object_type, $object_id];
     }
 
     $current_state = $object_id ? dev_essential_get_index_status($object_type, $object_id) : '';
@@ -64,7 +63,7 @@ function dev_essential_indexed_pages() {
         <?php echo $status_msg; ?>
 
         <div class="dev-section">
-            <h2>Search Page/Product/Term Index Status</h2>
+            <h2>🔎 Search Page Index Status</h2>
             <form method="post" style="display:flex;gap:10px;align-items:center;max-width:600px;">
                 <label for="site_url" style="margin:0;font-weight:600;">Site URL:</label>
                 <input type="url" name="site_url" id="site_url" value="<?php echo esc_attr($url); ?>" class="regular-text" style="flex:1" required>
@@ -74,7 +73,7 @@ function dev_essential_indexed_pages() {
 
         <?php if ($object_id): ?>
             <div class="dev-section">
-                <h2>Search Result</h2>
+                <h2>📄 Search Result</h2>
                 <table>
                     <tr><th>Title / Term Name</th><th>Index Status</th><th>Action</th></tr>
                     <tr>
@@ -94,9 +93,9 @@ function dev_essential_indexed_pages() {
                                 <input type="hidden" name="index_action" value="<?php echo $current_state === 'No-index' ? 'index' : 'noindex'; ?>">
                                 <?php
                                 if ($current_state === 'No-index') {
-                                    submit_button('Set to Index', 'secondary small', 'dev_toggle_index', false);
+                                    submit_button('Set to Index', 'primary small', 'dev_toggle_index', false);
                                 } else {
-                                    submit_button('Set to No-index', 'secondary small', 'dev_toggle_index', false);
+                                    submit_button('Set to No-index', 'primary small', 'dev_toggle_index', false);
                                 }
                                 ?>
                             </form>
@@ -107,12 +106,11 @@ function dev_essential_indexed_pages() {
         <?php endif; ?>
 
         <div class="dev-section">
-            <h2>Bulk CSV Upload</h2>
-            <p><strong>Format:</strong> Site URL, Action (<code>index</code> or <code>noindex</code>)</p>
-            <p><a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../index-bulk-template.csv'; ?>">Download Template</a></p>
+            <h2>📥 Bulk CSV Upload</h2>
+            <p><strong>Format:</strong> <code>Site URL, Action</code> (Action = <code>index</code> or <code>noindex</code>)  |  <a href="<?php echo plugin_dir_url( __FILE__ ) . '../index-pages-template.csv'; ?>">Download CSV Template Here</a></p>
             <form method="post" enctype="multipart/form-data" style="margin-top:10px;max-width:400px;">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload CSV', 'secondary', 'dev_csv_upload'); ?>
+                <?php submit_button('Upload and Bulk Update', 'primary', 'dev_csv_upload'); ?>
             </form>
         </div>
     </div>
@@ -121,17 +119,20 @@ function dev_essential_indexed_pages() {
 /**
  * Detect post/product/CPT or taxonomy term from URL
  */
-function dev_essential_find_indexed_object_by_url($url) {
+function dev_essential_find_object_by_url($url) {
+    // Posts, Products, CPTs
     $post_id = url_to_postid($url);
     if ($post_id) {
         return ['post', $post_id];
     }
 
+    // Taxonomies (WooCommerce Categories, Tags, CPT taxonomies)
     $parsed = wp_parse_url($url);
     if (!empty($parsed['path'])) {
         $segments = array_filter(explode('/', untrailingslashit($parsed['path'])));
         $slug = sanitize_title(end($segments));
         $taxonomies = get_taxonomies(['public' => true], 'names');
+
         foreach ($taxonomies as $taxonomy) {
             $term = get_term_by('slug', $slug, $taxonomy);
             if ($term && !is_wp_error($term)) {
@@ -143,7 +144,7 @@ function dev_essential_find_indexed_object_by_url($url) {
 }
 
 /**
- * Set index/noindex for posts or terms across major SEO plugins
+ * Set index/noindex across SEO plugins
  */
 function dev_essential_set_index_status($type, $object_id, $action) {
     $noindex = ($action === 'noindex');
@@ -157,7 +158,7 @@ function dev_essential_set_index_status($type, $object_id, $action) {
     }
 
     if ($type === 'term') {
-        update_term_meta($object_id, 'wpseo_noindex', $noindex ? '1' : ''); // Yoast
+        update_term_meta($object_id, 'wpseo_noindex', $noindex ? '1' : '');
         update_term_meta($object_id, '_aioseo_robots_noindex', $noindex ? '1' : '0');
         update_term_meta($object_id, 'rank_math_robots', $noindex ? 'noindex' : 'index');
         update_term_meta($object_id, '_seopress_robots_index', $noindex ? '0' : '1');
@@ -166,7 +167,7 @@ function dev_essential_set_index_status($type, $object_id, $action) {
 }
 
 /**
- * Get current index/noindex status
+ * Get current index/noindex state
  */
 function dev_essential_get_index_status($type, $object_id) {
     if ($type === 'post') {

@@ -19,12 +19,12 @@ function dev_essential_meta_updater() {
         $handle = fopen($_FILES['csv_file']['tmp_name'], 'r');
         $rows = 0; $success = 0;
         if ($handle !== false) {
-            fgetcsv($handle); // skip header
+            fgetcsv($handle); // Skip header
             while (($data = fgetcsv($handle)) !== false) {
                 $rows++;
-                $url = esc_url_raw(trim($data[0] ?? ''));
+                $url   = esc_url_raw(trim($data[0] ?? ''));
                 $title = trim($data[1] ?? '');
-                $desc = trim($data[2] ?? '');
+                $desc  = trim($data[2] ?? '');
                 if ($url) {
                     [$object_type, $object_id] = dev_essential_find_object_by_url($url);
                     if ($object_id) {
@@ -61,10 +61,10 @@ function dev_essential_meta_updater() {
         </style>
 
         <div class="dev-section">
-            <h2>Single Meta Update</h2>
+            <h2>🔎 Single Meta Update</h2>
             <form method="post">
                 <table class="form-table">
-                    <tr><th>Page / Post / CPT / Taxonomy URL</th>
+                    <tr><th>Page URL</th>
                         <td><input type="url" name="page_url" class="regular-text" required></td></tr>
                     <tr><th>Meta Title</th>
                         <td><input type="text" name="meta_title" class="regular-text" placeholder="Leave empty to keep current"></td></tr>
@@ -76,29 +76,32 @@ function dev_essential_meta_updater() {
         </div>
 
         <div class="dev-section">
-            <h2>Bulk CSV Upload</h2>
-            <p><strong>Note:</strong> Works for Posts, Pages, CPTs, WooCommerce Products, Product Categories, Tags, and other taxonomies.  
-            Leave Title or Description blank to keep existing values unchanged.</p>
-            <p><a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../meta-bulk-update-template.csv'; ?>">Download Template</a></p>
+            <h2>📥 Bulk CSV Upload</h2>
+            <p><strong>CSV Format:</strong> Site URL, Meta Title, Meta Description  |  
+			<a href="<?php echo plugin_dir_url( __FILE__ ) . '../meta-bulk-update-template.csv'; ?>">
+				Download CSV Template Here
+			</a>
+			</p>
+            <p><i><strong>Note:</strong> Works for WooCommerce Products, Product Categories, and all CPTs. Leave blank to keep existing meta unchanged.</i></p>
             <form method="post" enctype="multipart/form-data">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload and Bulk Update', 'secondary', 'meta_csv_upload'); ?>
+                <?php submit_button('Upload and Bulk Update', 'primary', 'meta_csv_upload'); ?>
             </form>
         </div>
     </div>
 <?php }
 
 /**
- * Detect whether URL belongs to a post type (post, page, CPT, product) or a taxonomy term.
+ * Detects whether URL belongs to a post/page/CPT/product or taxonomy term (like product_cat).
  */
 function dev_essential_find_object_by_url($url) {
-    // Try as post/page/product/CPT first
+    // Try post/page/CPT/product first
     $post_id = url_to_postid($url);
     if ($post_id) {
         return ['post', $post_id];
     }
 
-    // Try taxonomy term (nested URLs supported)
+    // Taxonomies: WooCommerce categories, tags, CPT taxonomies
     $parsed = wp_parse_url($url);
     if (!empty($parsed['path'])) {
         $segments = array_filter(explode('/', untrailingslashit($parsed['path'])));
@@ -116,8 +119,7 @@ function dev_essential_find_object_by_url($url) {
 }
 
 /**
- * Update meta fields for posts (all post types) or taxonomy terms.
- * Supports Yoast, AIOSEO, Rank Math, SEOPress, Squirrly.
+ * Updates meta titles & descriptions for posts or taxonomies across all major SEO plugins.
  */
 function dev_essential_update_meta_fields($type, $object_id, $meta_title, $meta_desc) {
     if ($type === 'post') {
@@ -139,14 +141,14 @@ function dev_essential_update_meta_fields($type, $object_id, $meta_title, $meta_
 
     if ($type === 'term') {
         if (!empty($meta_title)) {
-            update_term_meta($object_id, 'wpseo_title', $meta_title);
+            update_term_meta($object_id, 'wpseo_title', $meta_title); // Yoast
             update_term_meta($object_id, '_aioseo_title', $meta_title);
             update_term_meta($object_id, 'rank_math_title', $meta_title);
             update_term_meta($object_id, '_seopress_titles_title', $meta_title);
             update_term_meta($object_id, '_sq_title', $meta_title);
         }
         if (!empty($meta_desc)) {
-            update_term_meta($object_id, 'wpseo_desc', $meta_desc);
+            update_term_meta($object_id, 'wpseo_desc', $meta_desc); // Yoast
             update_term_meta($object_id, '_aioseo_description', $meta_desc);
             update_term_meta($object_id, 'rank_math_description', $meta_desc);
             update_term_meta($object_id, '_seopress_titles_desc', $meta_desc);

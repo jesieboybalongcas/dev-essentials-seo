@@ -4,7 +4,7 @@ function dev_essential_canonical_url() {
         $url = esc_url_raw($_POST['page_url']);
         $canonical = trim($_POST['canonical_url']);
 
-        [$object_type, $object_id] = dev_essential_find_indexed_object_by_url($url);
+        [$object_type, $object_id] = dev_essential_find_object_by_url($url);
 
         if ($object_id) {
             dev_essential_update_canonical_url($object_type, $object_id, $canonical);
@@ -24,7 +24,7 @@ function dev_essential_canonical_url() {
                 $url = esc_url_raw(trim($data[0] ?? ''));
                 $canonical = trim($data[1] ?? '');
                 if ($url) {
-                    [$object_type, $object_id] = dev_essential_find_indexed_object_by_url($url);
+                    [$object_type, $object_id] = dev_essential_find_object_by_url($url);
                     if ($object_id) {
                         dev_essential_update_canonical_url($object_type, $object_id, $canonical);
                         $success++;
@@ -59,11 +59,11 @@ function dev_essential_canonical_url() {
         </style>
 
         <div class="dev-section">
-            <h2>Single Canonical URL Update</h2>
+            <h2>🔎 Single Canonical URL Update</h2>
             <form method="post">
                 <table class="form-table">
                     <tr>
-                        <th>Page / Post / Product / Taxonomy URL</th>
+                        <th>Page URL</th>
                         <td><input type="url" name="page_url" class="regular-text" required></td>
                     </tr>
                     <tr>
@@ -76,23 +76,28 @@ function dev_essential_canonical_url() {
         </div>
 
         <div class="dev-section">
-            <h2>Bulk CSV Upload</h2>
-            <p><strong>Note:</strong> Works for all Post Types, CPTs, WooCommerce Products, and Taxonomies. Leave blank to keep existing value unchanged.</p>
-            <p><a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../canonical-bulk-template.csv'; ?>">Download Template</a></p>
+            <h2>📥 Bulk CSV Upload</h2>
+
+            <p><strong>CSV Format:</strong> Page URL, Canonical URL  |  
+			<a class="button" href="<?php echo plugin_dir_url(__FILE__) . '../canonical-bulk-template.csv'; ?>">Download CSV Template Here</a>
+			</p>
+            <p><i><strong>Note:</strong> Works for WooCommerce Products, Product Categories, CPTs, Posts, Pages, and all taxonomies.  
+            Leave blank to keep existing canonical unchanged.</i></p>
             <form method="post" enctype="multipart/form-data">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <?php submit_button('Upload and Bulk Update', 'secondary', 'canonical_csv_upload'); ?>
+                <?php submit_button('Upload and Bulk Update', 'primary', 'canonical_csv_upload'); ?>
             </form>
         </div>
     </div>
 <?php }
 
 /**
- * Update Canonical URL for posts or terms.
+ * Updates canonical URLs for posts (post types) or terms (taxonomies)
+ * Supports all major SEO plugins
  */
 function dev_essential_update_canonical_url($type, $object_id, $canonical) {
     if (empty($canonical)) {
-        return; // Skip if empty (no changes)
+        return; // Skip update if empty
     }
 
     if ($type === 'post') {
