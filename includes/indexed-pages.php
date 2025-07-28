@@ -117,33 +117,6 @@ function dev_essential_indexed_pages() {
 <?php }
 
 /**
- * Detect post/product/CPT or taxonomy term from URL
- */
-function dev_essential_find_object_by_url($url) {
-    // Posts, Products, CPTs
-    $post_id = url_to_postid($url);
-    if ($post_id) {
-        return ['post', $post_id];
-    }
-
-    // Taxonomies (WooCommerce Categories, Tags, CPT taxonomies)
-    $parsed = wp_parse_url($url);
-    if (!empty($parsed['path'])) {
-        $segments = array_filter(explode('/', untrailingslashit($parsed['path'])));
-        $slug = sanitize_title(end($segments));
-        $taxonomies = get_taxonomies(['public' => true], 'names');
-
-        foreach ($taxonomies as $taxonomy) {
-            $term = get_term_by('slug', $slug, $taxonomy);
-            if ($term && !is_wp_error($term)) {
-                return ['term', $term->term_id];
-            }
-        }
-    }
-    return [null, 0];
-}
-
-/**
  * Set index/noindex across SEO plugins
  */
 function dev_essential_set_index_status($type, $object_id, $action) {

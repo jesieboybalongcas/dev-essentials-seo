@@ -92,33 +92,6 @@ function dev_essential_meta_updater() {
 <?php }
 
 /**
- * Detects whether URL belongs to a post/page/CPT/product or taxonomy term (like product_cat).
- */
-function dev_essential_find_object_by_url($url) {
-    // Try post/page/CPT/product first
-    $post_id = url_to_postid($url);
-    if ($post_id) {
-        return ['post', $post_id];
-    }
-
-    // Taxonomies: WooCommerce categories, tags, CPT taxonomies
-    $parsed = wp_parse_url($url);
-    if (!empty($parsed['path'])) {
-        $segments = array_filter(explode('/', untrailingslashit($parsed['path'])));
-        $slug = sanitize_title(end($segments));
-
-        $taxonomies = get_taxonomies(['public' => true], 'names');
-        foreach ($taxonomies as $taxonomy) {
-            $term = get_term_by('slug', $slug, $taxonomy);
-            if ($term && !is_wp_error($term)) {
-                return ['term', $term->term_id];
-            }
-        }
-    }
-    return [null, 0];
-}
-
-/**
  * Updates meta titles & descriptions for posts or taxonomies across all major SEO plugins.
  */
 function dev_essential_update_meta_fields($type, $object_id, $meta_title, $meta_desc) {
