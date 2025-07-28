@@ -127,5 +127,15 @@ function dev_essential_update_meta_fields($type, $object_id, $meta_title, $meta_
             update_term_meta($object_id, '_seopress_titles_desc', $meta_desc);
             update_term_meta($object_id, '_sq_description', $meta_desc);
         }
+
+        // ✅ Clear WooCommerce product category cache
+        if (function_exists('wc_delete_product_transients')) {
+            wc_delete_product_transients();
+        }
+
+        // ✅ Clear Yoast SEO cache (important for taxonomies)
+        if (function_exists('wpseo_clear_cache')) {
+            wpseo_clear_cache();
+        }
     }
 }
