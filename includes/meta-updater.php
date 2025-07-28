@@ -113,8 +113,9 @@ function dev_essential_update_meta_fields($type, $object_id, $meta_title, $meta_
     }
 
     if ($type === 'term') {
+        // ✅ Fallback for all SEO plugins (still needed)
         if (!empty($meta_title)) {
-            update_term_meta($object_id, 'wpseo_title', $meta_title); // Yoast standard
+            update_term_meta($object_id, 'wpseo_title', $meta_title); 
             update_term_meta($object_id, '_aioseo_title', $meta_title);
             update_term_meta($object_id, 'rank_math_title', $meta_title);
             update_term_meta($object_id, '_seopress_titles_title', $meta_title);
@@ -122,43 +123,29 @@ function dev_essential_update_meta_fields($type, $object_id, $meta_title, $meta_
         }
 
         if (!empty($meta_desc)) {
-            update_term_meta($object_id, 'wpseo_desc', $meta_desc); // Yoast standard
+            update_term_meta($object_id, 'wpseo_desc', $meta_desc);
             update_term_meta($object_id, '_aioseo_description', $meta_desc);
             update_term_meta($object_id, 'rank_math_description', $meta_desc);
             update_term_meta($object_id, '_seopress_titles_desc', $meta_desc);
             update_term_meta($object_id, '_sq_description', $meta_desc);
         }
 
-        // ✅ Yoast-specific taxonomy meta update (important for product_cat)
-        if (!empty($meta_title) || !empty($meta_desc)) {
+        // ✅ Yoast Official Way (Taxonomy Repository)
+        if (class_exists('\Yoast\WP\SEO\Repositories\Meta_Taxonomy_Repository')) {
             $taxonomy = get_term($object_id)->taxonomy;
-            $option_name = 'wpseo_taxonomy_meta';
-            $all_tax_meta = get_option($option_name, []);
-
-            if (!isset($all_tax_meta[$taxonomy])) {
-                $all_tax_meta[$taxonomy] = [];
-            }
-
-            if (!isset($all_tax_meta[$taxonomy][$object_id])) {
-                $all_tax_meta[$taxonomy][$object_id] = [];
-            }
-
-            if (!empty($meta_title)) {
-                $all_tax_meta[$taxonomy][$object_id]['wpseo_title'] = $meta_title;
-            }
-            if (!empty($meta_desc)) {
-                $all_tax_meta[$taxonomy][$object_id]['wpseo_desc'] = $meta_desc;
-            }
-
-            update_option($option_name, $all_tax_meta);
+            $repo = \Yoast\WP\SEO\Repositories\Meta_Taxonomy_Repository::get_instance();
+            $repo->save_meta_data($taxonomy, $object_id, [
+                'wpseo_title' => $meta_title,
+                'wpseo_desc'  => $meta_desc
+            ]);
         }
 
-        // ✅ Clear WooCommerce product category cache
+        // ✅ Clear WooCommerce caches
         if (function_exists('wc_delete_product_transients')) {
             wc_delete_product_transients();
         }
 
-        // ✅ Clear Yoast indexables/cache
+        // ✅ Clear Yoast caches & rebuild indexables
         if (function_exists('wpseo_clear_cache')) {
             wpseo_clear_cache();
         }
